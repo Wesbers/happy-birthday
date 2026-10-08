@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Сюрприз</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#14102b;--card:#231b4a;--pink:#ff4f81;--gold:#ffc93c;--text:#fff7e8;--teal:#2ec4b6}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:Rubik,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center}
+#app{width:100%;max-width:420px}
+h1{font-size:28px;font-weight:800;line-height:1.2;margin-bottom:10px}
+p{opacity:.85;margin-bottom:22px;line-height:1.4}
+.step{font-size:14px;opacity:.6;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.col{display:flex;flex-direction:column;gap:10px}
+button{font:inherit;font-weight:600;color:var(--text);background:var(--card);border:2px solid transparent;border-radius:14px;padding:14px;cursor:pointer;transition:transform .15s,border-color .15s}
+button:active{transform:scale(.94)}
+button:hover{border-color:var(--pink)}
+.main{background:var(--pink);font-weight:800;font-size:18px;padding:16px}
+.box{font-size:48px;padding:18px 0}
+.boxes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.msg{min-height:50px;color:var(--gold);font-weight:600;margin-bottom:14px}
+.plate{background:linear-gradient(135deg,var(--pink),var(--gold));color:#2a1330;border-radius:22px;padding:28px 20px;animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
+.plate h1{font-size:30px}
+.plate p{opacity:1;margin:12px 0 0;font-weight:600}
+@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+canvas{position:fixed;inset:0;pointer-events:none}
+@media(prefers-reduced-motion:reduce){.plate{animation:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<canvas id="c"></canvas>
+<script>
+const tg = window.Telegram && Telegram.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+// ====== МОЖНО МЕНЯТЬ ======
+const NAME = "Ferax6767";
+const WISH = "Желаю счастья, денег и чтобы все баги в жизни были только в играх! 🎁";
+// ==========================
+
+const app = document.getElementById("app");
+const hit = () => { try { tg && tg.HapticFeedback.impactOccurred("light"); } catch(e){} };
+
+const quiz = [
+  {q:"Сколько тебе исполняется?", a:["Уже много 👴","Ещё мало 👶","Секрет 🤫"], r:"Правильный ответ! Ты всегда прав(а) 😎"},
+  {q:"Что главное в день рождения?", a:["Торт 🍰","Подарки 🎁","Я сам(а) 👑"], r:"Все варианты верные, тут нет проигравших!"}
+];
+
+function s1(){
+  app.innerHTML = `<div class="step">Этап 1 из 3</div>
+  <h1>Угадай число</h1><p>Я загадал число от 1 до 10. Попробуй угадать!</p>
+  <div class="grid">${[...Array(10).keys()].map(i=>`<button data-n="${i+1}">${i+1}</button>`).join("")}</div>
+  <div class="msg" id="m" style="margin-top:16px"></div>`;
+  app.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>{
+    hit(); document.getElementById("m").textContent = `Ого, ${b.dataset.n}! Ты угадал(а)! 🎯`;
+    setTimeout(()=>s2(0),1100);
+  });
+}
+
+function s2(i){
+  const x = quiz[i];
+  app.innerHTML = `<div class="step">Этап 2 из 3 · вопрос ${i+1}/${quiz.length}</div>
+  <h1>${x.q}</h1><p>Выбери ответ</p>
+  <div class="col">${x.a.map(t=>`<button class="ans">${t}</button>`).join("")}</div>
+  <div class="msg" id="m" style="margin-top:16px"></div>`;
+  app.querySelectorAll(".ans").forEach(b=>b.onclick=()=>{
+    hit(); document.getElementById("m").textContent = x.r;
+    setTimeout(()=> i+1<quiz.length ? s2(i+1) : s3(), 1200);
+  });
+}
+
+function s3(){
+  app.innerHTML = `<div class="step">Этап 3 из 3</div>
+  <h1>Найди подарок</h1><p>Выбери одну из коробок</p>
+  <div class="boxes">${[1,2,3].map(()=>`<button class="box">📦</button>`).join("")}</div>
+  <div class="msg" id="m" style="margin-top:16px"></div>`;
+  app.querySelectorAll(".box").forEach(b=>b.onclick=()=>{
+    hit(); b.textContent = "🎁"; document.getElementById("m").textContent = "Подарок найден!";
+    setTimeout(finish, 1000);
+  });
+}
+
+function finish(){
+  try { tg && tg.HapticFeedback.notificationOccurred("success"); } catch(e){}
+  app.innerHTML = `<div class="plate"><div style="font-size:54px">🎂</div>
+  <h1>С Днём рождения, ${NAME}!</h1><p>${WISH}</p></div>`;
+  confetti();
+}
+
+function confetti(){
+  const c = document.getElementById("c"), g = c.getContext("2d");
+  c.width = innerWidth; c.height = innerHeight;
+  const cols = ["#ff4f81","#ffc93c","#2ec4b6","#fff7e8"];
+  const p = [...Array(140)].map(()=>({x:Math.random()*c.width,y:-Math.random()*c.height,s:4+Math.random()*6,v:2+Math.random()*4,d:Math.random()*6,k:cols[Math.floor(Math.random()*4)]}));
+  let t = 0;
+  (function f(){
+    g.clearRect(0,0,c.width,c.height);
+    p.forEach(o=>{o.y+=o.v;o.x+=Math.sin((o.y+o.d)/20);g.fillStyle=o.k;g.fillRect(o.x,o.y,o.s,o.s*1.6);if(o.y>c.height){o.y=-10}});
+    if(++t<420) requestAnimationFrame(f); else g.clearRect(0,0,c.width,c.height);
+  })();
+}
+
+app.innerHTML = `<h1>🎁 Для ${NAME}</h1><p>Пройди 3 быстрых этапа, и тебя ждёт сюрприз</p><button class="main" id="go">Начать</button>`;
+document.getElementById("go").onclick = ()=>{hit(); s1();};
+</script>
+</body>
+</html>
